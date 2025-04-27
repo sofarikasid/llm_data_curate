@@ -128,10 +128,28 @@
                 <div id="dataset-preview" class="preview">
                     <p class="empty-message">No data entries yet. Add some entries to see them here.</p>
                 </div>
+                
+                <!-- Add pagination controls -->
+                <div class="pagination-controls">
+                    <div class="entries-per-page">
+                        <label for="entries-per-page">Entries per page:</label>
+                        <select id="entries-per-page">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div class="pagination-buttons">
+                        <button id="prev-page" class="pagination-btn" disabled>&laquo; Previous</button>
+                        <span id="page-indicator">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
+                        <button id="next-page" class="pagination-btn" disabled>Next &raquo;</button>
+                    </div>
+                </div>
             </div>
         </main>
 
-        <footer>
+        <footer></footer>
             <p>© 2025 LLM Data Curation App</p>
         </footer>
     </div>

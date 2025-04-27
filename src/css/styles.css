@@ -557,6 +557,68 @@ footer {
     border-radius: 4px;
 }
 
+/* Pagination styling */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.entries-per-page {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.entries-per-page label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.entries-per-page select {
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: white;
+    font-family: inherit;
+}
+
+.pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--border-color);
+    background-color: white;
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: var(--tertiary-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#page-indicator {
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
 /* Template list visibility */
 .template-list {
     display: none;

@@ -10,7 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentFormat: 'chat', // 'chat' or 'instruction'
         dataset: [],
         validationResult: null,
-        isValidating: false
+        isValidating: false,
+        // Pagination state
+        currentPage: 1,
+        entriesPerPage: 10
     };
 
     // DOM Elements
@@ -34,6 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const entryModal = document.getElementById('entry-modal');
     const modalClose = document.querySelector('.modal-close');
     const modalBody = document.getElementById('modal-body');
+
+    // Pagination elements
+    const prevPageBtn = document.getElementById('prev-page');
+    const nextPageBtn = document.getElementById('next-page');
+    const currentPageEl = document.getElementById('current-page');
+    const totalPagesEl = document.getElementById('total-pages');
+    const entriesPerPageSelect = document.getElementById('entries-per-page');
 
     // Initialize - load data from API
     initializeData();
@@ -123,6 +133,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === entryModal) {
             entryModal.style.display = 'none';
         }
+    });
+
+    // Add pagination event listeners
+    prevPageBtn.addEventListener('click', () => {
+        if (state.currentPage > 1) {
+            state.currentPage--;
+            updateDatasetPreview();
+        }
+    });
+    
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(state.dataset.length / state.entriesPerPage);
+        if (state.currentPage < totalPages) {
+            state.currentPage++;
+            updateDatasetPreview();
+        }
+    });
+    
+    entriesPerPageSelect.addEventListener('change', () => {
+        state.entriesPerPage = parseInt(entriesPerPageSelect.value);
+        state.currentPage = 1; // Reset to first page when changing entries per page
+        updateDatasetPreview();
     });
 
     // Functions
@@ -546,12 +578,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (state.dataset.length === 0) {
             datasetPreview.innerHTML = `<p class="empty-message">No data entries yet. Add some entries to see them here.</p>`;
+            updatePaginationControls(0, 0);
             return;
         }
         
+        // Calculate pagination
+        const totalEntries = state.dataset.length;
+        const totalPages = Math.ceil(totalEntries / state.entriesPerPage);
+        
+        // Ensure currentPage is valid
+        if (state.currentPage < 1) state.currentPage = 1;
+        if (state.currentPage > totalPages) state.currentPage = totalPages;
+        
+        // Calculate start and end indices for current page
+        const startIndex = (state.currentPage - 1) * state.entriesPerPage;
+        const endIndex = Math.min(startIndex + state.entriesPerPage, totalEntries);
+        
+        // Get entries for current page
+        const pageEntries = state.dataset.slice(startIndex, endIndex);
+        
         datasetPreview.innerHTML = '';
         
-        state.dataset.forEach((entry) => {
+        pageEntries.forEach((entry) => {
             const truncatedData = JSON.stringify(entry.data).substring(0, 100) + (JSON.stringify(entry.data).length > 100 ? '...' : '');
             
             // Determine quality badge
@@ -582,6 +630,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             datasetPreview.appendChild(entryCard);
         });
+        
+        // Update pagination controls
+        updatePaginationControls(totalEntries, totalPages);
+    }
+    
+    function updatePaginationControls(totalEntries, totalPages) {
+        // Update page indicator
+        currentPageEl.textContent = state.currentPage;
+        totalPagesEl.textContent = totalPages;
+        
+        // Update button states
+        prevPageBtn.disabled = state.currentPage <= 1;
+        nextPageBtn.disabled = state.currentPage >= totalPages;
+        
+        // Show/hide pagination controls
+        const paginationControls = document.querySelector('.pagination-controls');
+        if (paginationControls) {
+            paginationControls.style.display = totalEntries > 0 ? 'flex' : 'none';
+        }
     }
 
     async function deleteEntry(id) {
@@ -725,5 +792,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Set initial template visibility
         updateTemplateVisibility(state.currentFormat);
+        
+        // Initialize entries per page from select
+        state.entriesPerPage = parseInt(entriesPerPageSelect.value);
     }
 });
