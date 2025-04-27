@@ -1,0 +1,23 @@
+[
+  {
+    "id": "3f10a946-aef7-47f5-98a0-7de975ed5a0e",
+    "type": "chat",
+    "data": {
+      "messages": [
+        {
+          "role": "system",
+          "content": "This it the message"
+        },
+        {
+          "role": "user",
+          "content": "how are you"
+        },
+        {
+          "role": "assistant",
+          "content": "2+2"
+        }
+      ]
+    },
+    "timestamp": "2025-04-27T14:57:07.162075"
+  }
+]
