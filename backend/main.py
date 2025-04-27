@@ -6,8 +6,9 @@ import json
 import os
 import uuid
 import sys
+import re
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Tuple
 
 # Add the current directory to sys.path to fix imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,7 +16,7 @@ sys.path.append(current_dir)
 parent_dir = os.path.dirname(current_dir)
 
 # Now import models
-from models import DataEntry, Dataset
+from models import DataEntry, Dataset, ValidationResult
 
 app = FastAPI(title="LLM Data Curation API")
 
@@ -93,6 +94,88 @@ def get_entries():
     # Return all entries in the dataset
     return [entry.dict() for entry in dataset.entries]
 
+def validate_entry(entry_data: Dict[str, Any]) -> ValidationResult:
+    """Validate the quality of an entry with helpful feedback."""
+    issues = []
+    warnings = []
+    quality_score = 100
+    
+    if entry_data["type"] == "chat":
+        messages = entry_data["data"].get("messages", [])
+        
+        # Check for empty messages
+        for i, msg in enumerate(messages):
+            if not msg.get("content", "").strip():
+                issues.append(f"Message {i+1} ({msg.get('role', 'unknown')}) has empty content")
+                quality_score -= 20
+        
+        # Check for system message
+        has_system = any(msg.get("role") == "system" for msg in messages)
+        if not has_system:
+            warnings.append("No system message found. Consider adding one for better context.")
+            quality_score -= 5
+        
+        # Check for conversation flow
+        if len(messages) >= 2:
+            roles = [msg.get("role") for msg in messages]
+            for i in range(1, len(roles)):
+                if roles[i] == roles[i-1] and roles[i] in ["user", "assistant"]:
+                    warnings.append(f"Message {i+1} ({roles[i]}) follows another {roles[i]} message. Consider alternating roles.")
+                    quality_score -= 5
+        
+        # Check for very short responses
+        for i, msg in enumerate(messages):
+            if msg.get("role") == "assistant" and len(msg.get("content", "").strip()) < 15:
+                warnings.append(f"Assistant message {i+1} is very short. Consider providing more detailed responses.")
+                quality_score -= 5
+        
+    elif entry_data["type"] == "instruction":
+        instruction = entry_data["data"].get("instruction", "").strip()
+        output = entry_data["data"].get("output", "").strip()
+        
+        # Check for empty fields
+        if not instruction:
+            issues.append("Instruction field is empty")
+            quality_score -= 30
+        
+        if not output:
+            issues.append("Output field is empty")
+            quality_score -= 30
+        
+        # Check instruction quality
+        if len(instruction) < 10:
+            warnings.append("Instruction is very short. Consider being more specific.")
+            quality_score -= 10
+            
+        # Check instruction clarity
+        if instruction and not any(word in instruction.lower() for word in ["explain", "describe", "what", "why", "how", "when", "list", "summarize", "analyze"]):
+            warnings.append("Instruction may lack a clear directive. Consider using action verbs.")
+            quality_score -= 5
+        
+        # Check output thoroughness
+        if output and len(output) < 25:
+            warnings.append("Output is very short. Consider providing more thorough responses.")
+            quality_score -= 10
+    
+    # Cap quality score between 0-100
+    quality_score = max(0, min(100, quality_score))
+    
+    return ValidationResult(
+        quality_score=quality_score,
+        issues=issues,
+        warnings=warnings,
+        passes=len(issues) == 0
+    )
+
+@app.post(f"{API_PREFIX}/validate")
+def validate_data(entry_data: Dict[str, Any] = Body(...)):
+    """Endpoint to validate data before adding to dataset."""
+    try:
+        validation = validate_entry(entry_data)
+        return validation.dict()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.post(f"{API_PREFIX}/entries")
 def create_entry(entry_data: Dict[str, Any] = Body(...)):
     # Create a new data entry
@@ -100,12 +183,16 @@ def create_entry(entry_data: Dict[str, Any] = Body(...)):
         # Generate a unique ID for the entry
         entry_id = str(uuid.uuid4())
         
+        # Optional: validate the entry
+        validation = validate_entry(entry_data)
+        
         # Create a new DataEntry
         new_entry = DataEntry(
             id=entry_id,
             type=entry_data["type"],
             data=entry_data["data"],
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
+            quality_score=validation.quality_score  # Store the quality score
         )
         
         # Add to dataset
@@ -114,7 +201,11 @@ def create_entry(entry_data: Dict[str, Any] = Body(...)):
         # Save to file
         save_data()
         
-        return {"id": entry_id, "message": "Entry added successfully"}
+        return {
+            "id": entry_id, 
+            "message": "Entry added successfully",
+            "validation": validation.dict()
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

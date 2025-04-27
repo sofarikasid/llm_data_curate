@@ -19,5 +19,26 @@
       ]
     },
     "timestamp": "2025-04-27T14:57:07.162075"
+  },
+  {
+    "id": "e7e16652-81d7-40a6-9756-2cd4b6474592",
+    "type": "chat",
+    "data": {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a helpful assistant that provides accurate and concise answers to questions."
+        },
+        {
+          "role": "user",
+          "content": "What is machine learning?"
+        },
+        {
+          "role": "assistant",
+          "content": "Machine learning is a subset of artificial intelligence that enables computers to learn from data and improve their performance on specific tasks without being explicitly programmed. It involves algorithms that can analyze data, identify patterns, and make predictions or decisions."
+        }
+      ]
+    },
+    "timestamp": "2025-04-27T15:13:30.232353"
   }
 ]

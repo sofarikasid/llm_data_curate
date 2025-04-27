@@ -14,11 +14,18 @@ class InstructionFormat(BaseModel):
     input: Optional[str] = None
     output: str
 
+class ValidationResult(BaseModel):
+    quality_score: int
+    issues: List[str] = []
+    warnings: List[str] = []
+    passes: bool = True
+
 class DataEntry(BaseModel):
     id: str
     type: str  # 'chat' or 'instruction'
     data: Dict[str, Any]  # Will contain either ChatFormat or InstructionFormat data
     timestamp: datetime = Field(default_factory=datetime.now)
+    quality_score: int = 100  # Quality score from 0-100
 
 class Dataset(BaseModel):
     entries: List[DataEntry] = []
